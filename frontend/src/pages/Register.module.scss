@@ -1,0 +1,292 @@
+$verde: #00e676;
+$verde-escuro: #00c853;
+$fundo: #0a0f0a;
+$card-bg: #111a11;
+$borda: #1e2e1e;
+$texto: #e8f5e9;
+$texto-muted: #5a7a5a;
+$erro: #ff5252;
+$ok: #00e676;
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $fundo;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  position: relative;
+  overflow: hidden;
+  padding: 32px 16px;
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.circle1 {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 230, 118, 0.07) 0%, transparent 70%);
+  top: -200px;
+  right: -150px;
+}
+
+.circle2 {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 230, 118, 0.04) 0%, transparent 70%);
+  bottom: -150px;
+  left: -100px;
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 230, 118, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 230, 118, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  background: $card-bg;
+  border: 1px solid $borda;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 0 60px rgba(0, 230, 118, 0.05), 0 24px 64px rgba(0, 0, 0, 0.5);
+  animation: fadeUp 0.5s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.logoIcon {
+  font-size: 26px;
+  color: $verde;
+}
+
+.logoText {
+  font-size: 20px;
+  font-weight: 700;
+  color: $texto;
+  letter-spacing: -0.5px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 700;
+  color: $texto;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: $texto-muted;
+  margin: 0 0 28px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: $texto-muted;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.labelIcone {
+  font-size: 13px;
+}
+
+.input {
+  background: #0d150d;
+  border: 1px solid $borda;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: $texto;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &::placeholder { color: #2a3e2a; }
+
+  &:focus {
+    border-color: $verde;
+    box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.08);
+  }
+}
+
+.inputErro {
+  border-color: rgba(255, 82, 82, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(255, 82, 82, 0.08) !important;
+}
+
+.inputOk {
+  border-color: rgba(0, 230, 118, 0.4) !important;
+}
+
+// FORÇA DA SENHA
+.forca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.forcaBarra {
+  flex: 1;
+  height: 4px;
+  background: $borda;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.forcaPreenchimento {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s, background 0.3s;
+}
+
+.forcaLabel {
+  font-size: 11px;
+  color: $texto-muted;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.erro {
+  font-size: 13px;
+  color: $erro;
+  background: rgba(255, 82, 82, 0.08);
+  border: 1px solid rgba(255, 82, 82, 0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0;
+}
+
+.btn {
+  background: $verde;
+  color: #0a0f0a;
+  border: none;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 4px;
+
+  &:hover:not(:disabled) {
+    background: $verde-escuro;
+    box-shadow: 0 4px 20px rgba(0, 230, 118, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) { transform: translateY(0); }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loginLink {
+  text-align: center;
+  font-size: 13px;
+  color: $texto-muted;
+  margin: 4px 0 0;
+}
+
+.link {
+  color: $verde;
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover { text-decoration: underline; }
+}
+
+// SUCESSO
+.sucesso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 32px;
+  text-align: center;
+  animation: fadeUp 0.4s ease;
+
+  p {
+    font-size: 18px;
+    font-weight: 700;
+    color: $verde;
+    margin: 0;
+  }
+
+  span {
+    font-size: 13px;
+    color: $texto-muted;
+
+    &.sucessoIcone {
+      font-size: 48px;
+    }
+  }
+}
