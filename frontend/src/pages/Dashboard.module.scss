@@ -885,3 +885,96 @@ $ts: #2a3e2a;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+// ── BOTÃO PDF ─────────────────────────────────────
+.btnPDF {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid $br;
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: $tm;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .2s;
+
+  &:hover {
+    border-color: rgba(0,230,118,.35);
+    color: $v;
+    background: rgba(0,230,118,.06);
+    box-shadow: 0 4px 16px rgba(0,230,118,.1);
+  }
+
+  &:active { transform: translateY(1px); }
+}
+
+// ── INFO CARD (regras de acesso) ──────────────────
+.infoCard {
+  background: $cb;
+  border: 1px solid $br;
+  border-radius: 14px;
+  padding: 24px;
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: $tx;
+    margin: 0 0 18px;
+  }
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
+}
+
+.infoItem {
+  background: rgba(255,255,255,.02);
+  border: 1px solid $br;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    li {
+      font-size: 13px;
+      color: $tm;
+      padding-left: 14px;
+      position: relative;
+
+      &::before {
+        content: '✓';
+        position: absolute;
+        left: 0;
+        color: $v;
+        font-size: 11px;
+      }
+    }
+  }
+}
+
+.infoBadge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  align-self: flex-start;
+}

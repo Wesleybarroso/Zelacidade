@@ -8,6 +8,8 @@ import {
   AreaChart, Area, LineChart, Line,
 } from 'recharts'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -86,6 +88,8 @@ export default function Dashboard() {
   const [mapaFiltroPrio, setMapaFiltroPrio] = useState('Todos')
   const [geocoords, setGeocoords] = useState({})
   const geocodificandoRef = useRef(false)
+  const [usuarios, setUsuarios] = useState([])
+  const papel = JSON.parse(localStorage.getItem('perfil') || '{}').papel || 'cidadao'
 
   const fileRef = useRef(null)
   const cameraRef = useRef(null)
@@ -140,6 +144,10 @@ export default function Dashboard() {
     if (aba !== 'mapa' || geocodificandoRef.current) return
     geocodificarTodos()
   }, [aba, incidentes])
+
+  useEffect(() => {
+    if (aba === 'usuarios' && papel === 'admin') carregarUsuarios()
+  }, [aba])
 
   async function geocodificarTodos() {
     geocodificandoRef.current = true
@@ -316,6 +324,135 @@ export default function Dashboard() {
     }
   }
 
+  // ── USUÁRIOS (admin) ────────────────────────────
+  async function carregarUsuarios() {
+    try {
+      const res = await axios.get('http://localhost:3000/usuarios', { headers })
+      setUsuarios(res.data)
+    } catch {}
+  }
+
+  async function mudarPapel(id, papelAtual) {
+    const novo = papelAtual === 'admin' ? 'cidadao' : 'admin'
+    if (!confirm(`Mudar para "${novo}"?`)) return
+    try {
+      await axios.put(`http://localhost:3000/usuarios/${id}/papel`, { papel: novo }, { headers })
+      carregarUsuarios()
+    } catch { alert('Erro ao alterar papel.') }
+  }
+
+  // ── EXPORTAR PDF ────────────────────────────────
+  async function exportarPDF(lista = incidentes, titulo = 'Relatório de Incidentes') {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+    const largura = doc.internal.pageSize.getWidth()
+    const agora = new Date().toLocaleString('pt-BR')
+
+    // Cabeçalho verde
+    doc.setFillColor(0, 200, 83)
+    doc.rect(0, 0, largura, 22, 'F')
+
+    // Logo texto
+    doc.setTextColor(7, 12, 7)
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.text('⬡ ZelaCidade', 14, 14)
+
+    // Título direita
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(titulo, largura - 14, 10, { align: 'right' })
+    doc.text(`Gerado em: ${agora}`, largura - 14, 16, { align: 'right' })
+
+    // Cards de resumo
+    doc.setTextColor(50, 50, 50)
+    const cards = [
+      { label: 'Total', valor: lista.length, cor: [15, 24, 15] },
+      { label: 'Alta Prioridade', valor: lista.filter(i => i.prioridade === 'Alta').length, cor: [80, 10, 10] },
+      { label: 'Pendentes', valor: lista.filter(i => i.status_resolucao === 'Pendente').length, cor: [80, 50, 10] },
+      { label: 'Resolvidos', valor: lista.filter(i => i.status_resolucao === 'Resolvido').length, cor: [10, 60, 30] },
+    ]
+    const cardW = (largura - 28) / 4
+    cards.forEach((c, i) => {
+      const x = 14 + i * (cardW + 2)
+      doc.setFillColor(...c.cor)
+      doc.roundedRect(x, 28, cardW, 18, 2, 2, 'F')
+      doc.setTextColor(180, 230, 180)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(c.label.toUpperCase(), x + cardW / 2, 34, { align: 'center' })
+      doc.setTextColor(0, 230, 118)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text(String(c.valor), x + cardW / 2, 42, { align: 'center' })
+    })
+
+    // Tabela
+    autoTable(doc, {
+      startY: 52,
+      head: [['#', 'Tipo', 'Localização', 'Solicitante', 'Contato', 'Prioridade', 'Status', 'Data', 'Hora']],
+      body: lista.map(i => [
+        i.id,
+        i.tipo_problema || '',
+        i.localizacao || '',
+        i.nome_solicitante || '',
+        i.contato_solicitante || '',
+        i.prioridade || '',
+        i.status_resolucao || '',
+        i.data_registro || '',
+        i.hora_registro || '',
+      ]),
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+        textColor: [30, 30, 30],
+        lineColor: [220, 240, 220],
+        lineWidth: 0.2,
+      },
+      headStyles: {
+        fillColor: [15, 24, 15],
+        textColor: [0, 230, 118],
+        fontStyle: 'bold',
+        fontSize: 8,
+      },
+      alternateRowStyles: { fillColor: [245, 252, 245] },
+      columnStyles: {
+        0: { cellWidth: 8 },
+        5: { cellWidth: 20 },
+        6: { cellWidth: 22 },
+        7: { cellWidth: 22 },
+        8: { cellWidth: 14 },
+      },
+      didDrawCell: (data) => {
+        // Colorir badge de prioridade
+        if (data.section === 'body' && data.column.index === 5) {
+          const val = data.cell.raw
+          if (val === 'Alta') doc.setTextColor(220, 50, 50)
+          else if (val === 'Média') doc.setTextColor(200, 120, 0)
+          else if (val === 'Baixa') doc.setTextColor(0, 180, 80)
+        }
+        if (data.section === 'body' && data.column.index === 6) {
+          const val = data.cell.raw
+          if (val === 'Pendente') doc.setTextColor(200, 120, 0)
+          else if (val === 'Em Análise') doc.setTextColor(0, 150, 220)
+          else if (val === 'Resolvido') doc.setTextColor(0, 180, 80)
+        }
+      },
+    })
+
+    // Rodapé
+    const totalPaginas = doc.internal.getNumberOfPages()
+    for (let p = 1; p <= totalPaginas; p++) {
+      doc.setPage(p)
+      doc.setFontSize(8)
+      doc.setTextColor(150, 150, 150)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`ZelaCidade — Sistema de Gestão de Incidentes Urbanos`, 14, doc.internal.pageSize.getHeight() - 6)
+      doc.text(`Página ${p} de ${totalPaginas}`, largura - 14, doc.internal.pageSize.getHeight() - 6, { align: 'right' })
+    }
+
+    doc.save(`zelacidade-relatorio-${new Date().toISOString().slice(0,10)}.pdf`)
+  }
+
   // ── FILTRO ──────────────────────────────────────
   const filtrados = incidentes.filter(i => {
     const ok1 = busca === '' || [i.tipo_problema, i.localizacao, i.nome_solicitante]
@@ -369,6 +506,7 @@ export default function Dashboard() {
             { id: 'incidentes',   icon: '📋', label: 'Incidentes' },
             { id: 'estatisticas', icon: '📈', label: 'Estatísticas' },
             { id: 'mapa',         icon: '🗺️', label: 'Mapa' },
+            ...(papel === 'admin' ? [{ id: 'usuarios', icon: '👥', label: 'Usuários' }] : []),
             { id: 'perfil',       icon: '👤', label: 'Perfil' },
           ].map(({ id, icon, label }) => (
             <button key={id}
@@ -411,6 +549,9 @@ export default function Dashboard() {
                 </button>
                 {sinoAberto && <NotificacoesPanel />}
               </div>
+              <button className={styles.btnPDF} onClick={() => exportarPDF(incidentes, 'Relatório Geral')}>
+                📄 Exportar PDF
+              </button>
               <button className={styles.btnVerde} onClick={abrirNovo}>+ Novo Incidente</button>
             </div>
           </header>
@@ -521,6 +662,13 @@ export default function Dashboard() {
               <div>
                 <h2 className={styles.perfilNome}>{perfil.nome || 'Usuário'}</h2>
                 <p className={styles.perfilEmail}>{perfil.email || 'Sem email cadastrado'}</p>
+                <span className={styles.badge} style={{
+                  background: papel === 'admin' ? 'rgba(0,230,118,.15)' : 'rgba(64,196,255,.15)',
+                  color: papel === 'admin' ? '#00e676' : '#40c4ff',
+                  marginTop: 6, display: 'inline-block'
+                }}>
+                  {papel === 'admin' ? '👑 Administrador' : '👤 Cidadão'}
+                </span>
               </div>
             </div>
 
@@ -735,6 +883,84 @@ export default function Dashboard() {
           </>
         })()}
 
+        {/* ══ ABA: USUÁRIOS (admin) ══ */}
+        {aba === 'usuarios' && papel === 'admin' && <>
+          <header className={styles.header}>
+            <div>
+              <h1 className={styles.titulo}>Gerenciar Usuários</h1>
+              <p className={styles.subtitulo}>{usuarios.length} usuários cadastrados</p>
+            </div>
+          </header>
+
+          <div className={styles.tabelaWrap}>
+            <table className={styles.tabela}>
+              <thead>
+                <tr>
+                  <th>#</th><th>Nome</th><th>Email</th>
+                  <th>Telefone</th><th>Papel</th><th>Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usuarios.length === 0
+                  ? <tr><td colSpan={6} className={styles.tabelaVazio}>Nenhum usuário encontrado.</td></tr>
+                  : usuarios.map(u => (
+                    <tr key={u.id} className={styles.tabelaRow}>
+                      <td className={styles.tdId}>{u.id}</td>
+                      <td><strong>{u.nome || '—'}</strong></td>
+                      <td>{u.email}</td>
+                      <td>{u.telefone || '—'}</td>
+                      <td>
+                        <span className={styles.badge} style={{
+                          background: u.papel === 'admin' ? 'rgba(0,230,118,.15)' : 'rgba(64,196,255,.15)',
+                          color: u.papel === 'admin' ? '#00e676' : '#40c4ff'
+                        }}>
+                          {u.papel === 'admin' ? '👑 Admin' : '👤 Cidadão'}
+                        </span>
+                      </td>
+                      <td onClick={e => e.stopPropagation()}>
+                        <button
+                          className={u.papel === 'admin' ? styles.btnAcaoVerm : styles.btnAcaoVerde}
+                          onClick={() => mudarPapel(u.id, u.papel)}
+                          title={u.papel === 'admin' ? 'Rebaixar para Cidadão' : 'Promover para Admin'}
+                          style={{ width: 'auto', padding: '4px 10px', fontSize: 12 }}
+                        >
+                          {u.papel === 'admin' ? '⬇️ Cidadão' : '⬆️ Admin'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+
+          {/* Card informativo */}
+          <div className={styles.infoCard}>
+            <h3>📋 Regras de Acesso</h3>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoItem}>
+                <span className={styles.infoBadge} style={{ background: 'rgba(0,230,118,.15)', color: '#00e676' }}>👑 Admin</span>
+                <ul>
+                  <li>Visualiza todos os incidentes</li>
+                  <li>Edita e deleta qualquer incidente</li>
+                  <li>Altera status de resolução</li>
+                  <li>Acessa estatísticas e relatórios</li>
+                  <li>Gerencia usuários</li>
+                </ul>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.infoBadge} style={{ background: 'rgba(64,196,255,.15)', color: '#40c4ff' }}>👤 Cidadão</span>
+                <ul>
+                  <li>Cadastra novos incidentes</li>
+                  <li>Visualiza apenas seus próprios registros</li>
+                  <li>Edita seus próprios incidentes</li>
+                  <li>Não pode alterar status</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </>}
+
         {/* ══ ABA: MAPA ══ */}
         {aba === 'mapa' && (() => {
           const incFiltrados = incidentes.filter(i => {
@@ -947,13 +1173,15 @@ export default function Dashboard() {
                   <option>Alta</option><option>Média</option><option>Baixa</option>
                 </select>
               </label>
-              <label className={styles.fLabel}>
-                Status
-                <select className={styles.fInput} value={form.status_resolucao}
-                  onChange={e => setForm({ ...form, status_resolucao: e.target.value })}>
-                  <option>Pendente</option><option>Em Análise</option><option>Resolvido</option>
-                </select>
-              </label>
+              {papel === 'admin' && (
+                <label className={styles.fLabel}>
+                  Status
+                  <select className={styles.fInput} value={form.status_resolucao}
+                    onChange={e => setForm({ ...form, status_resolucao: e.target.value })}>
+                    <option>Pendente</option><option>Em Análise</option><option>Resolvido</option>
+                  </select>
+                </label>
+              )}
 
               {/* SOLICITANTE / CONTATO */}
               <label className={styles.fLabel}>
